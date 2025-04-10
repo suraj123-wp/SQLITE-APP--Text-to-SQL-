@@ -18,6 +18,7 @@ else:
 # ✅ Correct model name (avoid NotFound error)
 MODEL_NAME = "models/gemini-2.0-flash-lite"  # Change to "gemini-1.5-pro" if you're using the v1.5 version and have access
 
+# Prompt to guide Gemini in generating SQL queries
 prompt = """
 You are a SQL expert. Convert the user's natural language request into a valid SQL query.
 Assume the database is SQLite and there is a table called 'sales_data' with the following columns:
@@ -32,7 +33,7 @@ Examples:
    SELECT City, SUM(Sales) AS Total_Sales FROM sales_data WHERE sale_date BETWEEN '2024-01-01' AND '2024-12-31' GROUP BY City ORDER BY Total_Sales DESC LIMIT 1
 
 3. "Get monthly sales for Product 2 in 2025" means:
-   SELECT DATE_FORMAT(sale_date, '%Y-%m') AS Month, SUM(Sales) AS Total_Sales FROM sales_data WHERE Product_Name = 'Product 2' AND sale_date BETWEEN '2025-01-01' AND '2025-12-31' GROUP BY Month ORDER BY Month
+   SELECT strftime('%Y-%m', sale_date) AS Month, SUM(Sales) AS Total_Sales FROM sales_data WHERE Product_Name = 'Product 2' AND sale_date BETWEEN '2025-01-01' AND '2025-12-31' GROUP BY Month ORDER BY Month
 
 4. "Show top 3 cities by total quantity sold" means:
    SELECT City, SUM(Quantity) AS Total_Quantity FROM sales_data GROUP BY City ORDER BY Total_Quantity DESC LIMIT 3
@@ -41,7 +42,7 @@ Examples:
    SELECT Product_Name, SUM(Sales) FROM sales_data GROUP BY Product_Name
 
 6. "Find total quantity sold for each channel in the last 6 months" means:
-   SELECT Channel, SUM(Quantity) FROM sales_data WHERE sale_date >= CURDATE() - INTERVAL 6 MONTH GROUP BY Channel
+   SELECT Channel, SUM(Quantity) FROM sales_data WHERE sale_date >= date('now', '-6 months') GROUP BY Channel
 
 7. "What is the average sales per transaction for Product 2" means:
    SELECT AVG(Sales) FROM sales_data WHERE Product_Name = 'Product 2'
@@ -53,27 +54,16 @@ Examples:
    SELECT * FROM sales_data WHERE City = 'City1' AND Channel = 'Channel 1' AND sale_date BETWEEN '2024-10-01' AND '2024-10-31'
 
 10. "Compare sales in January and February 2025" means:
-    SELECT DATE_FORMAT(sale_date, '%Y-%m') AS Month, SUM(Sales) FROM sales_data WHERE sale_date BETWEEN '2025-01-01' AND '2025-02-28' GROUP BY Month
+    SELECT strftime('%Y-%m', sale_date) AS Month, SUM(Sales) FROM sales_data WHERE sale_date BETWEEN '2025-01-01' AND '2025-02-28' GROUP BY Month
 
 11. "What are the monthly sales across platform1 since Jan 2025?" means:
-    SELECT DATE_FORMAT(sale_date, '%Y-%m') AS Month, SUM(Sales) AS Total_Sales
-    FROM sales_data
-    WHERE Channel = 'Channel 1' AND sale_date >= '2025-01-01'
-    GROUP BY Month
-    ORDER BY Month;
+    SELECT strftime('%Y-%m', sale_date) AS Month, SUM(Sales) AS Total_Sales FROM sales_data WHERE Channel = 'Channel 1' AND sale_date >= '2025-01-01' GROUP BY Month ORDER BY Month;
 
 12. "What is the share of units sold across various platforms since Jan 2025?" means:
-    SELECT Channel, SUM(Quantity) AS Total_Quantity, (SUM(Quantity) / (SELECT SUM(Quantity) FROM sales_data WHERE sale_date >= '2025-01-01')) * 100 AS Share_Percent
-    FROM sales_data
-    WHERE sale_date >= '2025-01-01'
-    GROUP BY Channel;
+    SELECT Channel, SUM(Quantity) AS Total_Quantity, (SUM(Quantity) / (SELECT SUM(Quantity) FROM sales_data WHERE sale_date >= '2025-01-01')) * 100 AS Share_Percent FROM sales_data WHERE sale_date >= '2025-01-01' GROUP BY Channel;
 
 13. "Can you tell me the top 5 days with the highest daily units sold?" means:
-    SELECT sale_date, SUM(Quantity) AS Total_Quantity
-    FROM sales_data
-    GROUP BY sale_date
-    ORDER BY Total_Quantity DESC
-    LIMIT 5;
+    SELECT sale_date, SUM(Quantity) AS Total_Quantity FROM sales_data GROUP BY sale_date ORDER BY Total_Quantity DESC LIMIT 5;
 """
 
 # ✅ Function to get SQL query from Gemini
