@@ -132,18 +132,43 @@ def list_tables(db_path):
         st.error(f"General Error while listing tables: {str(e)}")
         return []
 
+# ✅ Function to initialize and create the sales_data table
+def create_sales_data_table(db_path):
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        create_table_query = """
+        CREATE TABLE IF NOT EXISTS sales_data (
+            sale_date TEXT,
+            Channel TEXT,
+            Product_Name TEXT,
+            City TEXT,
+            Quantity INTEGER,
+            Sales REAL
+        );
+        """
+        cursor.execute(create_table_query)
+        conn.commit()
+        conn.close()
+        st.success("Table 'sales_data' created successfully.")
+    except sqlite3.Error as e:
+        st.error(f"Error creating table: {e}")
+
 # ✅ Streamlit UI
 st.set_page_config(page_title="SQL Assistant")
 st.header("🤖 Gemini SQL Query Generator")
+
+# SQLite database path (update to your actual path)
+db_path = 'sales_data.db'  # Path to your SQLite database
+
+# Initialize the database and create table if not exists
+create_sales_data_table(db_path)
 
 # Text input for question
 question = st.text_input("🔍 Ask your data question (in plain English):", key="input")
 
 # Button to generate SQL query and run it
 submit = st.button("Get SQL & Run")
-
-# SQLite database path (update to your actual path)
-db_path = 'sales_data.db'  # Path to your SQLite database
 
 if submit and question:
     with st.spinner("Generating SQL and fetching data..."):
