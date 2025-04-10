@@ -126,30 +126,33 @@ submit = st.button("Get SQL & Run")
 db_path = 'sales_data.db'  # Path to your SQLite database
 
 if submit and question:
-    with st.spinner("Generating SQL and fetching data..."):
-        sql_query = get_gemini_response(question, prompt)
-        
-        if sql_query:
-            st.subheader("🧠 Generated SQL Query:")
-            st.code(sql_query, language="sql")
-
-            # List tables in the SQLite database to check if 'sales_data' exists
-            tables = list_tables(db_path)
+    if question.strip() == "":
+        st.error("Please enter a valid question.")
+    else:
+        with st.spinner("Generating SQL and fetching data..."):
+            sql_query = get_gemini_response(question, prompt)
             
-            # Execute SQL query and show results if 'sales_data' exists
-            if ('sales_data',) in tables:
-                data, columns = read_sqlite_query(sql_query, db_path)
+            if sql_query:
+                st.subheader("🧠 Generated SQL Query:")
+                st.code(sql_query, language="sql")
 
-                st.subheader("📊 Query Results:")
-                if data:
-                    # Check if the number of columns in the data matches the number of columns in the query
-                    if len(columns) == len(data[0]):
-                        # Convert the data to a format that can be displayed properly
-                        df = pd.DataFrame(data, columns=columns)
-                        st.dataframe(df)
+                # List tables in the SQLite database to check if 'sales_data' exists
+                tables = list_tables(db_path)
+                
+                # Execute SQL query and show results if 'sales_data' exists
+                if ('sales_data',) in tables:
+                    data, columns = read_sqlite_query(sql_query, db_path)
+
+                    st.subheader("📊 Query Results:")
+                    if data:
+                        # Check if the number of columns in the data matches the number of columns in the query
+                        if len(columns) == len(data[0]):
+                            # Convert the data to a format that can be displayed properly
+                            df = pd.DataFrame(data, columns=columns)
+                            st.dataframe(df)
+                        else:
+                            st.error("Mismatch between the number of columns in the result and the expected structure.")
                     else:
-                        st.error("Mismatch between the number of columns in the result and the expected structure.")
+                        st.warning("No data returned.")
                 else:
-                    st.warning("No data returned.")
-            else:
-                st.error("Table 'sales_data' does not exist in the database.")
+                    st.error("Table 'sales_data' does not exist in the database.")
